@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Leaflet Custom Controls</title>
+<link rel="stylesheet" href="css/leaflet.css" />
+<link rel="stylesheet" href="css/formhub-map-controls.css" />
+<style type="text/css">
+  html { height: 100% }
+  body { height: 100%; margin: 0; padding: 0 }
+  #map { height: 100% }
+</style>
+</head>
+<body onLoad="initialize()">
+  <div id="map" style="width:100%; height:100%; margin-top: 40px"></div>
+  <script src="js/jquery-1.6.4.min.js"></script>
+  <script src="js/leaflet.js"></script>
+  <script src="js/wax.leaf.min.js"></script>
+  <script type="text/javascript" src="js/formhub.controls.filter-by-question.js"></script>
+  <script type="text/javascript" src="js/data.js"></script>
+  <script type="text/javascript">
+	var mapMarkerIcon = L.Icon.extend({options:{
+		iconUrl: 'images/marker-solid-24.png',
+		shadowUrl: null,
+		iconSize: new L.Point(24, 24),
+		shadowSize: null,
+		iconAnchor: new L.Point(12, 24),
+		popupAnchor: new L.Point(0,-24)
+	}});
+	
+	var center = {"lat": "-1.271599", "lng": "36.848797"};
+  	var leafletMap;
+	
+	function initialize() {
+		var centerLatLng = new L.LatLng(center.lat, center.lng);
+		var defaultZoom = 15; 
+		var layersControl = new L.Control.Layers({}, {}, {collapsed: true});
+		
+		leafletMap = new L.Map('map').setView(centerLatLng, defaultZoom);;
+		
+		wax.tilejson('http://api.tiles.mapbox.com/v3/mapbox.mapbox-streets.jsonp', function(tilejson) {
+        
+        	var mapboxstreet = new wax.leaf.connector(tilejson);
+        
+			// Add MapBox Streets as a base layer
+			leafletMap.addLayer(mapboxstreet);
+        
+        	layersControl.addBaseLayer(mapboxstreet, "Mapbox Street");
+    	});
+		
+		leafletMap.addControl(layersControl);
+		
+		var geoJsonLayer = new L.GeoJSON(null, {
+			pointToLayer: function (latlng){
+		        var marker = new L.Marker(latlng, {
+		            icon: new mapMarkerIcon()
+		        });
+				return marker;
+		    }	
+		});
+		
+		$.get('data.json', function(data){
+			geoJsonLayer.addGeoJSON(data);
+		});
+		
+		leafletMap.addLayer(geoJsonLayer);
+		
+		var filterByQuestion = new L.Control.FilterByQuestion(geoJsonLayer, [{url: 'data2.json', q: 'Do you have children'}, {url: 'data3.json', q: 'Do you smoke'}], {collapsed: true});
+		leafletMap.addControl(filterByQuestion);
+		
+		//addPoints();
+	}
+	
+	function addPoints()
+	{
+		var latLngArray = new Array();
+    	for (var i=0; i<points.length; i=i+1) {
+			// use a self executing function to create a new scope in each
+			// iteration of the loop.
+			latLngArray.push((function(){
+				var point = new L.LatLng(points[i].lat, points[i].lng);
+			
+				// for circle marker
+				//var marker = new L.CircleMarker(point, {
+				//    'radius': 6 
+				//});
+				var marker = new L.Marker(point, {icon: new mapMarkerIcon()});
+			
+				var instance = points[i].instance;
+			
+				// TODO: remove hard coded url
+				var url = "/odk_viewer/survey/" + instance.toString() + "/";
+				// open a loading popup so the user knows something is happening
+				marker.bindPopup('Loading...').openPopup();
+			
+				// bind open popup to marker's click event
+			
+				marker.on('click', function(e){
+					var targetMarker = e.target;
+			
+					/*  for circle marker logic
+					var popup = new L.Popup({
+						'maxWidth': 500,
+						'offset': new L.Point(0,-50)
+					});
+					latlng = e.latlng;
+					popup.setLatLng(latlng);
+					*/
+			
+				   $.get(url).done(function(data){
+						targetMarker.bindPopup(data,{'maxWidth': 500}).openPopup();
+						// for circle marker
+						// popup.setContent(data);
+						//  map.openPopup(popup);
+					});
+				});
+			
+				leafletMap.addLayer(marker);
+				return point;
+			})());
+		}
+		// fitting to bounds with one point will zoom too far
+		if (latLngArray.length > 1) {
+		var latlngbounds = new L.LatLngBounds(latLngArray);
+			//leafletMap.fitBounds(latlngbounds);
+		}
+	}
+  </script>
+</body>
+</html>
+
