@@ -32,7 +32,7 @@
 	
 	function initialize() {
 		var centerLatLng = new L.LatLng(center.lat, center.lng);
-		var defaultZoom = 15; 
+		var defaultZoom = 12;
 		var layersControl = new L.Control.Layers({}, {}, {collapsed: true});
 		
 		leafletMap = new L.Map('map').setView(centerLatLng, defaultZoom);;
