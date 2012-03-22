@@ -35,7 +35,7 @@
 		var defaultZoom = 12;
 		var layersControl = new L.Control.Layers({}, {}, {collapsed: true});
 		
-		leafletMap = new L.Map('map').setView(centerLatLng, defaultZoom);;
+		leafletMap = new L.Map('map').setView(centerLatLng, defaultZoom);
 		
 		wax.tilejson('http://api.tiles.mapbox.com/v3/mapbox.mapbox-streets.jsonp', function(tilejson) {
         
